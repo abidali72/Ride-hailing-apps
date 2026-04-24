@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:padding="32dp">
+
+        <!-- Spacer -->
+        <View android:layout_width="1dp" android:layout_height="60dp"/>
+
+        <!-- Logo -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🚗"
+            android:textSize="48sp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ZAARA"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:textColor="@color/green_primary"
+            android:letterSpacing="0.1"
+            android:layout_marginTop="8dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/login_subtitle"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="40dp"/>
+
+        <!-- Phone Input -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/ZaaraInputLayout"
+            android:hint="Phone Number"
+            app:startIconDrawable="@android:drawable/sym_action_call">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/phoneInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="phone"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:hint="@string/phone_hint"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Send OTP Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/sendOtpBtn"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="@string/send_otp"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            style="@style/ZaaraButton"
+            android:layout_marginTop="20dp"/>
+
+        <!-- OTP Section (hidden initially) -->
+        <LinearLayout
+            android:id="@+id/otpSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginTop="20dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/ZaaraInputLayout"
+                android:hint="@string/enter_otp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/otpInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="4"
+                    android:textColor="@color/text_primary"
+                    android:textSize="24sp"
+                    android:letterSpacing="0.5"
+                    android:gravity="center"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/verifyOtpBtn"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="@string/verify_otp"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                style="@style/ZaaraButton"
+                android:layout_marginTop="16dp"/>
+        </LinearLayout>
+
+        <!-- Status Text -->
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@color/green_primary"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:visibility="gone"/>
+
+        <!-- Register Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/registerBtn"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/register"
+            style="@style/ZaaraButton.Outline"
+            android:layout_marginTop="12dp"
+            android:visibility="gone"/>
+
+        <!-- Progress -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            android:indeterminateTint="@color/green_primary"/>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Demo Login Section -->
+        <LinearLayout
+            android:id="@+id/demoSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/demo_login"
+                android:textSize="14sp"
+                android:textColor="@color/text_tertiary"
+                android:layout_marginBottom="12dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/demoRiderBtn"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="🚶 Login as Rider (Ahmed Khan)"
+                android:textSize="14sp"
+                style="@style/ZaaraButton.Outline"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/demoDriverBtn"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="🚗 Login as Driver (Bilal Ahmad)"
+                android:textSize="14sp"
+                style="@style/ZaaraButton.Outline"/>
+        </LinearLayout>
+
+        <!-- Spacer -->
+        <View android:layout_width="1dp" android:layout_height="40dp"/>
+    </LinearLayout>
+</ScrollView>

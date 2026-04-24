@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zaara</string>
+    <string name="tagline">Your Ride, Your Way</string>
+    <string name="company_tagline">Pakistan\'s Smart Ride-Hailing</string>
+
+    <!-- Auth -->
+    <string name="login_title">Welcome to Zaara</string>
+    <string name="login_subtitle">Enter your phone number to continue</string>
+    <string name="phone_hint">03XX XXXXXXX</string>
+    <string name="send_otp">Send OTP</string>
+    <string name="enter_otp">Enter OTP Code</string>
+    <string name="verify_otp">Verify OTP</string>
+    <string name="otp_sent">OTP sent to %s</string>
+    <string name="register">Create Account</string>
+    <string name="name_hint">Full Name</string>
+    <string name="email_hint">Email (optional)</string>
+    <string name="select_role">I am a</string>
+    <string name="rider">Rider</string>
+    <string name="driver">Driver</string>
+    <string name="demo_login">Quick Demo Login</string>
+
+    <!-- Rider -->
+    <string name="where_to">Where to?</string>
+    <string name="your_location">Your Location</string>
+    <string name="enter_destination">Enter destination</string>
+    <string name="pickup_location">Pickup Location</string>
+    <string name="drop_location">Drop-off Location</string>
+    <string name="select_ride">Select Ride Type</string>
+    <string name="confirm_ride">Confirm Ride</string>
+    <string name="finding_driver">Finding your driver...</string>
+    <string name="driver_assigned">Driver Assigned!</string>
+    <string name="driver_arriving">Driver is arriving</string>
+    <string name="ride_in_progress">Ride in Progress</string>
+    <string name="ride_completed">Ride Completed!</string>
+    <string name="cancel_ride">Cancel Ride</string>
+    <string name="fare_estimate">Fare Estimate</string>
+    <string name="ride_history">Ride History</string>
+    <string name="no_rides">No rides yet</string>
+
+    <!-- Driver -->
+    <string name="go_online">Go Online</string>
+    <string name="go_offline">Go Offline</string>
+    <string name="online">Online</string>
+    <string name="offline">Offline</string>
+    <string name="new_ride_request">New Ride Request!</string>
+    <string name="accept">Accept</string>
+    <string name="reject">Reject</string>
+    <string name="navigate_pickup">Navigate to Pickup</string>
+    <string name="start_ride">Start Ride</string>
+    <string name="complete_ride">Complete Ride</string>
+    <string name="earnings">Earnings</string>
+    <string name="today_earnings">Today</string>
+    <string name="weekly_earnings">This Week</string>
+    <string name="monthly_earnings">This Month</string>
+    <string name="total_earnings">Total</string>
+
+    <!-- Common -->
+    <string name="profile">Profile</string>
+    <string name="settings">Settings</string>
+    <string name="logout">Logout</string>
+    <string name="loading">Loading…</string>
+    <string name="error">Error</string>
+    <string name="retry">Retry</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="pkr">PKR</string>
+    <string name="km">km</string>
+    <string name="rating">Rating</string>
+    <string name="rate_driver">Rate your driver</string>
+    <string name="submit_rating">Submit Rating</string>
+    <string name="feedback_hint">Any feedback? (optional)</string>
+    <string name="payment_method">Payment Method</string>
+    <string name="cash">Cash</string>
+    <string name="jazzcash">JazzCash</string>
+    <string name="easypaisa">Easypaisa</string>
+
+    <!-- Vehicle Types -->
+    <string name="bike">Bike</string>
+    <string name="rickshaw">Rickshaw</string>
+    <string name="car">Car</string>
+    <string name="premium">Premium</string>
+    <string name="bike_desc">Fastest &amp; cheapest</string>
+    <string name="rickshaw_desc">Affordable &amp; comfortable</string>
+    <string name="car_desc">Standard AC ride</string>
+    <string name="premium_desc">Luxury experience</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_history">History</string>
+    <string name="nav_earnings">Earnings</string>
+    <string name="nav_profile">Profile</string>
+</resources>

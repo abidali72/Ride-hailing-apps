@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Brand Colors - Green (Pakistan identity) -->
+    <color name="green_primary">#00C853</color>
+    <color name="green_primary_dark">#00A844</color>
+    <color name="green_primary_light">#69F0AE</color>
+    <color name="green_accent">#00E676</color>
+
+    <!-- Dark Theme Colors -->
+    <color name="bg_dark">#0F1117</color>
+    <color name="bg_dark_card">#1A1D27</color>
+    <color name="bg_dark_card_elevated">#242836</color>
+    <color name="bg_dark_surface">#2A2E3D</color>
+    <color name="bg_dark_input">#1E2130</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0B3C0</color>
+    <color name="text_tertiary">#6B6F80</color>
+    <color name="text_on_green">#FFFFFF</color>
+
+    <!-- Status Colors -->
+    <color name="status_online">#00E676</color>
+    <color name="status_offline">#FF5252</color>
+    <color name="status_busy">#FFB300</color>
+    <color name="rating_star">#FFD700</color>
+
+    <!-- Vehicle Type Colors -->
+    <color name="bike_color">#00BCD4</color>
+    <color name="rickshaw_color">#FF9800</color>
+    <color name="car_color">#2196F3</color>
+    <color name="premium_color">#9C27B0</color>
+
+    <!-- Gradients & Misc -->
+    <color name="gradient_start">#00C853</color>
+    <color name="gradient_end">#00E676</color>
+    <color name="overlay_dark">#CC000000</color>
+    <color name="divider">#2A2E3D</color>
+    <color name="ripple_light">#33FFFFFF</color>
+
+    <!-- Driver App Accent -->
+    <color name="amber_primary">#FFB300</color>
+    <color name="amber_dark">#FF8F00</color>
+    <color name="amber_light">#FFE082</color>
+
+    <!-- Material theme overrides -->
+    <color name="colorPrimary">@color/green_primary</color>
+    <color name="colorPrimaryDark">@color/green_primary_dark</color>
+    <color name="colorAccent">@color/green_accent</color>
+</resources>

@@ -1,0 +1,17 @@
+{
+  "name": "zaara-server",
+  "version": "1.0.0",
+  "description": "Zaara - Uber-like ride-hailing app backend for Pakistan",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^9.0.0",
+    "ws": "^8.16.0"
+  }
+}
