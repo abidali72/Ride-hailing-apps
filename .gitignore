@@ -22,19 +22,30 @@ google-services (2).json
 .vscode/
 *.swp
 *.swo
+*.iml
+misc.xml
+deploymentTargetDropDown.xml
+render.experimental.xml
 
 # Android
 .gradle/
 build/
 local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.aab
 *.apk
-*.aar
+output-metadata.json
 *.jks
 *.keystore
 
 # Logs
 logs/
 *.log
+
+# Android Profiling
+*.hprof
 
 # OS
 .DS_Store
