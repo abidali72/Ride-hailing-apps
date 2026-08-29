@@ -1,0 +1,3 @@
+## 2026-08-29 - Map Indexing for In-Memory Database Lookups
+**Learning:** In simple in-memory JSON database systems, performing linear searches (`db.findUser({ id })`) inside mapping functions for lists of entities creates an O(N * M) bottleneck. Pre-indexing the entity array into a `Map` reduces key lookup complexity from O(N) to O(1), improving iteration performance from O(N * M) to O(N + M). Combining this with early threshold filtering (e.g., radius filtering) eliminates extra object allocations.
+**Action:** Always pre-index linear arrays into `Map` data structures when performing repeated relational queries across collections in memory.
