@@ -20,6 +20,8 @@ class InMemoryDB {
       earnings: [],
       settings: {}
     };
+    // Index for fast O(1) user lookup by ID
+    this.usersById = new Map();
   }
 
   // Mimic db.prepare().get() and .all()
@@ -43,6 +45,9 @@ class InMemoryDB {
 
   // Direct access methods (used by routes instead of SQL)
   findUser(filter) {
+    if (filter && filter.id && Object.keys(filter).length === 1) {
+      return this.usersById.get(filter.id);
+    }
     return this.data.users.find(u => {
       for (const [k, v] of Object.entries(filter)) {
         if (u[k] !== v) return false;
@@ -102,6 +107,7 @@ class InMemoryDB {
     user.rating = user.rating || 5.0;
     user.is_active = 1;
     this.data.users.push(user);
+    this.usersById.set(user.id, user);
     this.save();
     return user;
   }
@@ -143,7 +149,7 @@ class InMemoryDB {
   }
 
   updateUser(id, updates) {
-    const user = this.data.users.find(u => u.id === id);
+    const user = this.usersById.get(id) || this.data.users.find(u => u.id === id);
     if (user) Object.assign(user, updates);
     this.save();
     return user;
@@ -194,6 +200,7 @@ class InMemoryDB {
       if (fs.existsSync(DB_PATH)) {
         const raw = fs.readFileSync(DB_PATH, 'utf8');
         this.data = JSON.parse(raw);
+        this.rebuildIndex();
         console.log('📂 Loaded existing database');
         return true;
       }
@@ -201,6 +208,17 @@ class InMemoryDB {
       console.log('⚠️ Could not load database, creating fresh one');
     }
     return false;
+  }
+
+  rebuildIndex() {
+    this.usersById.clear();
+    if (Array.isArray(this.data.users)) {
+      for (const user of this.data.users) {
+        if (user && user.id) {
+          this.usersById.set(user.id, user);
+        }
+      }
+    }
   }
 }
 

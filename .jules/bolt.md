@@ -1,0 +1,3 @@
+## 2026-09-01 - Filter before map and Map indexing in-memory DB lookups
+**Learning:** Linear array searches `find()` across in-memory DB records during batch loops like `findNearbyDrivers` cause severe O(N*M) degradation. Filtering by geographic distance before database lookups drastically reduces lookup count, and adding a `Map` index (`usersById`) turns O(N) array scans into O(1) hash map lookups.
+**Action:** Always filter spatial/geometric constraints first before triggering relational queries/lookups, and index in-memory DB arrays by primary key when frequent single-record lookups are performed.
