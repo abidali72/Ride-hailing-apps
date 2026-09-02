@@ -59,19 +59,26 @@ function calculateFare(distanceKm, vehicleType, surgeMultiplier = 1.0) {
     };
 }
 
+// Performance Optimization: Cache radian conversion factor at module level
+const RAD = Math.PI / 180;
+
 function calculateDistance(lat1, lng1, lat2, lng2) {
-    const R = 6371; // Earth's radius in km
-    const dLat = toRad(lat2 - lat1);
-    const dLng = toRad(lng2 - lng1);
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const radLat1 = lat1 * RAD;
+    const radLat2 = lat2 * RAD;
+    const dLatHalf = (radLat2 - radLat1) / 2;
+    const dLngHalf = ((lng2 - lng1) * RAD) / 2;
+    const sinDLat = Math.sin(dLatHalf);
+    const sinDLng = Math.sin(dLngHalf);
+
+    const a = sinDLat * sinDLat +
+        Math.cos(radLat1) * Math.cos(radLat2) *
+        sinDLng * sinDLng;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+    return 6371 * c; // 6371 = Earth's radius in km
 }
 
 function toRad(deg) {
-    return deg * (Math.PI / 180);
+    return deg * RAD;
 }
 
 function getAllFareEstimates(distanceKm, surgeMultiplier = 1.0) {
