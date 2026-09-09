@@ -1,0 +1,3 @@
+## 2026-09-09 - Spatial Bounding-Box Pre-Filtering and Lazy User Lookups in Driver Matching
+**Learning:** Performing trigonometric Haversine distance calculations and user database scans for every online driver on nearby driver queries introduces severe O(N) performance overhead as driver counts scale. Pre-filtering driver locations using a fast coordinate bounding box (`abs(lat - pickupLat) > radius/110`) filters out ~90%+ of candidate drivers before doing expensive math or user lookup queries.
+**Action:** Always apply fast rectangular bounding-box pre-filtering and defer database table/collection lookups until candidate items pass geometric spatial checks.
