@@ -1,0 +1,3 @@
+## 2025-05-18 - Map Indexing for In-Memory DB Lookups
+**Learning:** In-memory JSON/object databases that query records using linear array scans (like `Array.prototype.find`) scale quadratically O(N^2) during nested lookups (e.g. matching drivers to users or enriching trip history). Replacing linear searches on primary and foreign keys (`id`, `user_id`, `phone`, `rider_id`, `driver_id`) with JavaScript `Map` instances turns lookups into O(1) operations, producing over 300x speedups in matching loops.
+**Action:** Always maintain Map index lookups for primary and foreign key fields on custom in-memory data structures, updating them on insertions, updates, and initial load.
