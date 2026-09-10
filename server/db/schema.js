@@ -1,7 +1,6 @@
 /**
  * In-Memory Database (JSON-based) for MVP
- * No native dependencies needed - works everywhere
- * Mimics SQL-like API for easy migration to PostgreSQL later
+ * Optimized with Map indexes for O(1) lookups on frequent queries.
  */
 
 const { v4: uuidv4 } = require('uuid');
@@ -20,6 +19,52 @@ class InMemoryDB {
       earnings: [],
       settings: {}
     };
+    this._initIndexes();
+  }
+
+  // Initialize Map lookup indexes to replace O(N) array scans with O(1) lookups
+  _initIndexes() {
+    this.usersById = new Map();
+    this.usersByPhone = new Map();
+    this.driversById = new Map();
+    this.driversByUserId = new Map();
+    this.tripsById = new Map();
+    this.tripsByRiderId = new Map();
+    this.tripsByDriverId = new Map();
+    this.earningsByDriverId = new Map();
+  }
+
+  // Rebuild all Map indexes from this.data collections
+  _rebuildIndexes() {
+    this._initIndexes();
+    for (const u of this.data.users) {
+      if (u.id) this.usersById.set(u.id, u);
+      if (u.phone) this.usersByPhone.set(u.phone, u);
+    }
+    for (const d of this.data.drivers) {
+      if (d.id) this.driversById.set(d.id, d);
+      if (d.user_id) this.driversByUserId.set(d.user_id, d);
+    }
+    for (const t of this.data.trips) {
+      if (t.id) this.tripsById.set(t.id, t);
+      if (t.rider_id) {
+        let list = this.tripsByRiderId.get(t.rider_id);
+        if (!list) { list = []; this.tripsByRiderId.set(t.rider_id, list); }
+        list.push(t);
+      }
+      if (t.driver_id) {
+        let list = this.tripsByDriverId.get(t.driver_id);
+        if (!list) { list = []; this.tripsByDriverId.set(t.driver_id, list); }
+        list.push(t);
+      }
+    }
+    for (const e of this.data.earnings) {
+      if (e.driver_id) {
+        let list = this.earningsByDriverId.get(e.driver_id);
+        if (!list) { list = []; this.earningsByDriverId.set(e.driver_id, list); }
+        list.push(e);
+      }
+    }
   }
 
   // Mimic db.prepare().get() and .all()
@@ -33,7 +78,7 @@ class InMemoryDB {
   }
 
   _query(query, params, mode) {
-    // This is a simplified query parser - routes handle most logic
+    // Simplified query parser - routes handle most logic
     return mode === 'get' ? null : [];
   }
 
@@ -41,8 +86,16 @@ class InMemoryDB {
     return { changes: 0 };
   }
 
-  // Direct access methods (used by routes instead of SQL)
+  // Direct access methods with Map index acceleration
   findUser(filter) {
+    if (filter) {
+      const keys = Object.keys(filter);
+      if (keys.length === 1) {
+        if (keys[0] === 'id') return this.usersById.get(filter.id);
+        if (keys[0] === 'phone') return this.usersByPhone.get(filter.phone);
+      }
+    }
+
     return this.data.users.find(u => {
       for (const [k, v] of Object.entries(filter)) {
         if (u[k] !== v) return false;
@@ -61,6 +114,14 @@ class InMemoryDB {
   }
 
   findDriver(filter) {
+    if (filter) {
+      const keys = Object.keys(filter);
+      if (keys.length === 1) {
+        if (keys[0] === 'id') return this.driversById.get(filter.id);
+        if (keys[0] === 'user_id') return this.driversByUserId.get(filter.user_id);
+      }
+    }
+
     return this.data.drivers.find(d => {
       for (const [k, v] of Object.entries(filter)) {
         if (d[k] !== v) return false;
@@ -79,6 +140,13 @@ class InMemoryDB {
   }
 
   findTrip(filter) {
+    if (filter) {
+      const keys = Object.keys(filter);
+      if (keys.length === 1 && keys[0] === 'id') {
+        return this.tripsById.get(filter.id);
+      }
+    }
+
     return this.data.trips.find(t => {
       for (const [k, v] of Object.entries(filter)) {
         if (t[k] !== v) return false;
@@ -88,6 +156,16 @@ class InMemoryDB {
   }
 
   findTrips(filter = {}) {
+    const keys = Object.keys(filter);
+    if (keys.length === 1) {
+      if (keys[0] === 'rider_id') {
+        return this.tripsByRiderId.get(filter.rider_id) || [];
+      }
+      if (keys[0] === 'driver_id') {
+        return this.tripsByDriverId.get(filter.driver_id) || [];
+      }
+    }
+
     return this.data.trips.filter(t => {
       for (const [k, v] of Object.entries(filter)) {
         if (t[k] !== v) return false;
@@ -102,6 +180,8 @@ class InMemoryDB {
     user.rating = user.rating || 5.0;
     user.is_active = 1;
     this.data.users.push(user);
+    if (user.id) this.usersById.set(user.id, user);
+    if (user.phone) this.usersByPhone.set(user.phone, user);
     this.save();
     return user;
   }
@@ -113,6 +193,8 @@ class InMemoryDB {
     driver.total_rides = driver.total_rides || 0;
     driver.kyc_verified = driver.kyc_verified || 0;
     this.data.drivers.push(driver);
+    if (driver.id) this.driversById.set(driver.id, driver);
+    if (driver.user_id) this.driversByUserId.set(driver.user_id, driver);
     this.save();
     return driver;
   }
@@ -122,6 +204,17 @@ class InMemoryDB {
     trip.created_at = trip.created_at || new Date().toISOString();
     trip.status = trip.status || 'requested';
     this.data.trips.push(trip);
+    if (trip.id) this.tripsById.set(trip.id, trip);
+    if (trip.rider_id) {
+      let list = this.tripsByRiderId.get(trip.rider_id);
+      if (!list) { list = []; this.tripsByRiderId.set(trip.rider_id, list); }
+      list.push(trip);
+    }
+    if (trip.driver_id) {
+      let list = this.tripsByDriverId.get(trip.driver_id);
+      if (!list) { list = []; this.tripsByDriverId.set(trip.driver_id, list); }
+      list.push(trip);
+    }
     this.save();
     return trip;
   }
@@ -138,32 +231,61 @@ class InMemoryDB {
     earning.id = earning.id || uuidv4();
     earning.created_at = new Date().toISOString();
     this.data.earnings.push(earning);
+    if (earning.driver_id) {
+      let list = this.earningsByDriverId.get(earning.driver_id);
+      if (!list) { list = []; this.earningsByDriverId.set(earning.driver_id, list); }
+      list.push(earning);
+    }
     this.save();
     return earning;
   }
 
   updateUser(id, updates) {
-    const user = this.data.users.find(u => u.id === id);
-    if (user) Object.assign(user, updates);
+    const user = this.findUser({ id });
+    if (user) {
+      const oldPhone = user.phone;
+      Object.assign(user, updates);
+      if (updates.phone && updates.phone !== oldPhone) {
+        if (oldPhone) this.usersByPhone.delete(oldPhone);
+        this.usersByPhone.set(user.phone, user);
+      }
+    }
     this.save();
     return user;
   }
 
   updateDriver(filter, updates) {
-    const driver = this.data.drivers.find(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
+    const driver = this.findDriver(filter);
+    if (driver) {
+      const oldUserId = driver.user_id;
+      Object.assign(driver, updates);
+      if (updates.user_id && updates.user_id !== oldUserId) {
+        if (oldUserId) this.driversByUserId.delete(oldUserId);
+        this.driversByUserId.set(driver.user_id, driver);
       }
-      return true;
-    });
-    if (driver) Object.assign(driver, updates);
+    }
     this.save();
     return driver;
   }
 
   updateTrip(id, updates) {
-    const trip = this.data.trips.find(t => t.id === id);
-    if (trip) Object.assign(trip, updates);
+    const trip = this.findTrip({ id });
+    if (trip) {
+      const oldDriverId = trip.driver_id;
+      Object.assign(trip, updates);
+      if (updates.driver_id && updates.driver_id !== oldDriverId) {
+        if (oldDriverId) {
+          const list = this.tripsByDriverId.get(oldDriverId);
+          if (list) {
+            const idx = list.indexOf(trip);
+            if (idx !== -1) list.splice(idx, 1);
+          }
+        }
+        let list = this.tripsByDriverId.get(updates.driver_id);
+        if (!list) { list = []; this.tripsByDriverId.set(updates.driver_id, list); }
+        list.push(trip);
+      }
+    }
     this.save();
     return trip;
   }
@@ -178,7 +300,7 @@ class InMemoryDB {
   }
 
   getEarnings(driverId) {
-    return this.data.earnings.filter(e => e.driver_id === driverId);
+    return this.earningsByDriverId.get(driverId) || [];
   }
 
   save() {
@@ -194,6 +316,7 @@ class InMemoryDB {
       if (fs.existsSync(DB_PATH)) {
         const raw = fs.readFileSync(DB_PATH, 'utf8');
         this.data = JSON.parse(raw);
+        this._rebuildIndexes();
         console.log('📂 Loaded existing database');
         return true;
       }
@@ -281,4 +404,4 @@ function initializeDatabase() {
   return db;
 }
 
-module.exports = { initializeDatabase };
+module.exports = { initializeDatabase, InMemoryDB };
