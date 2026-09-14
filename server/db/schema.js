@@ -41,59 +41,43 @@ class InMemoryDB {
     return { changes: 0 };
   }
 
-  // Direct access methods (used by routes instead of SQL)
-  findUser(filter) {
-    return this.data.users.find(u => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (u[k] !== v) return false;
+  // Performance optimization: Extract filter keys once per query instead of calling Object.entries inside array loop.
+  // Eliminates O(N) object/array allocations per find query.
+  _createMatcher(filter) {
+    const keys = Object.keys(filter);
+    const len = keys.length;
+    return item => {
+      for (let i = 0; i < len; i++) {
+        const k = keys[i];
+        if (item[k] !== filter[k]) return false;
       }
       return true;
-    });
+    };
+  }
+
+  // Direct access methods (used by routes instead of SQL)
+  findUser(filter) {
+    return this.data.users.find(this._createMatcher(filter));
   }
 
   findUsers(filter = {}) {
-    return this.data.users.filter(u => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (u[k] !== v) return false;
-      }
-      return true;
-    });
+    return this.data.users.filter(this._createMatcher(filter));
   }
 
   findDriver(filter) {
-    return this.data.drivers.find(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
-      }
-      return true;
-    });
+    return this.data.drivers.find(this._createMatcher(filter));
   }
 
   findDrivers(filter = {}) {
-    return this.data.drivers.filter(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
-      }
-      return true;
-    });
+    return this.data.drivers.filter(this._createMatcher(filter));
   }
 
   findTrip(filter) {
-    return this.data.trips.find(t => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (t[k] !== v) return false;
-      }
-      return true;
-    });
+    return this.data.trips.find(this._createMatcher(filter));
   }
 
   findTrips(filter = {}) {
-    return this.data.trips.filter(t => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (t[k] !== v) return false;
-      }
-      return true;
-    });
+    return this.data.trips.filter(this._createMatcher(filter));
   }
 
   addUser(user) {
@@ -150,12 +134,7 @@ class InMemoryDB {
   }
 
   updateDriver(filter, updates) {
-    const driver = this.data.drivers.find(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
-      }
-      return true;
-    });
+    const driver = this.data.drivers.find(this._createMatcher(filter));
     if (driver) Object.assign(driver, updates);
     this.save();
     return driver;
