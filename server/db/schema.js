@@ -20,6 +20,29 @@ class InMemoryDB {
       earnings: [],
       settings: {}
     };
+    // Bolt: Map indexes for O(1) primary key lookups instead of O(N) array scans
+    this.usersById = new Map();
+    this.driversById = new Map();
+    this.driversByUserId = new Map();
+    this.tripsById = new Map();
+  }
+
+  _rebuildIndexes() {
+    this.usersById.clear();
+    this.driversById.clear();
+    this.driversByUserId.clear();
+    this.tripsById.clear();
+
+    for (const user of this.data.users) {
+      if (user.id) this.usersById.set(user.id, user);
+    }
+    for (const driver of this.data.drivers) {
+      if (driver.id) this.driversById.set(driver.id, driver);
+      if (driver.user_id) this.driversByUserId.set(driver.user_id, driver);
+    }
+    for (const trip of this.data.trips) {
+      if (trip.id) this.tripsById.set(trip.id, trip);
+    }
   }
 
   // Mimic db.prepare().get() and .all()
@@ -42,7 +65,12 @@ class InMemoryDB {
   }
 
   // Direct access methods (used by routes instead of SQL)
+  // Bolt: Optimized findUser to use Map index when filtering by id (O(1) lookup)
   findUser(filter) {
+    const keys = Object.keys(filter);
+    if (keys.length === 1 && keys[0] === 'id') {
+      return this.usersById.get(filter.id) || null;
+    }
     return this.data.users.find(u => {
       for (const [k, v] of Object.entries(filter)) {
         if (u[k] !== v) return false;
@@ -60,7 +88,13 @@ class InMemoryDB {
     });
   }
 
+  // Bolt: Optimized findDriver to use Map index when filtering by id or user_id (O(1) lookup)
   findDriver(filter) {
+    const keys = Object.keys(filter);
+    if (keys.length === 1) {
+      if (keys[0] === 'id') return this.driversById.get(filter.id) || null;
+      if (keys[0] === 'user_id') return this.driversByUserId.get(filter.user_id) || null;
+    }
     return this.data.drivers.find(d => {
       for (const [k, v] of Object.entries(filter)) {
         if (d[k] !== v) return false;
@@ -78,7 +112,12 @@ class InMemoryDB {
     });
   }
 
+  // Bolt: Optimized findTrip to use Map index when filtering by id (O(1) lookup)
   findTrip(filter) {
+    const keys = Object.keys(filter);
+    if (keys.length === 1 && keys[0] === 'id') {
+      return this.tripsById.get(filter.id) || null;
+    }
     return this.data.trips.find(t => {
       for (const [k, v] of Object.entries(filter)) {
         if (t[k] !== v) return false;
@@ -102,6 +141,7 @@ class InMemoryDB {
     user.rating = user.rating || 5.0;
     user.is_active = 1;
     this.data.users.push(user);
+    if (user.id) this.usersById.set(user.id, user);
     this.save();
     return user;
   }
@@ -113,6 +153,8 @@ class InMemoryDB {
     driver.total_rides = driver.total_rides || 0;
     driver.kyc_verified = driver.kyc_verified || 0;
     this.data.drivers.push(driver);
+    if (driver.id) this.driversById.set(driver.id, driver);
+    if (driver.user_id) this.driversByUserId.set(driver.user_id, driver);
     this.save();
     return driver;
   }
@@ -122,6 +164,7 @@ class InMemoryDB {
     trip.created_at = trip.created_at || new Date().toISOString();
     trip.status = trip.status || 'requested';
     this.data.trips.push(trip);
+    if (trip.id) this.tripsById.set(trip.id, trip);
     this.save();
     return trip;
   }
@@ -143,26 +186,25 @@ class InMemoryDB {
   }
 
   updateUser(id, updates) {
-    const user = this.data.users.find(u => u.id === id);
+    const user = this.findUser({ id });
     if (user) Object.assign(user, updates);
     this.save();
     return user;
   }
 
   updateDriver(filter, updates) {
-    const driver = this.data.drivers.find(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
-      }
-      return true;
-    });
-    if (driver) Object.assign(driver, updates);
+    const driver = this.findDriver(filter);
+    if (driver) {
+      Object.assign(driver, updates);
+      if (driver.id) this.driversById.set(driver.id, driver);
+      if (driver.user_id) this.driversByUserId.set(driver.user_id, driver);
+    }
     this.save();
     return driver;
   }
 
   updateTrip(id, updates) {
-    const trip = this.data.trips.find(t => t.id === id);
+    const trip = this.findTrip({ id });
     if (trip) Object.assign(trip, updates);
     this.save();
     return trip;
@@ -194,6 +236,7 @@ class InMemoryDB {
       if (fs.existsSync(DB_PATH)) {
         const raw = fs.readFileSync(DB_PATH, 'utf8');
         this.data = JSON.parse(raw);
+        this._rebuildIndexes();
         console.log('📂 Loaded existing database');
         return true;
       }

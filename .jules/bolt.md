@@ -1,0 +1,3 @@
+## 2025-05-20 - InMemoryDB O(N) Primary Key Lookup Optimization
+**Learning:** In `server/db/schema.js`, driver matching and route handlers frequently perform single-field primary key lookups (`id` or `user_id`) on in-memory arrays. Under high driver/user counts, repeated O(N) array scans inside `findNearbyDrivers` cause severe bottlenecks (~2,600ms per 100 ops for 10k records).
+**Action:** Always maintain Map indexes (`usersById`, `driversById`, `driversByUserId`, `tripsById`) in memory database structures to achieve O(1) lookups and keep index updates synchronized across insert/update operations.
