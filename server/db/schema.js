@@ -20,6 +20,20 @@ class InMemoryDB {
       earnings: [],
       settings: {}
     };
+    // Performance optimization: O(1) Map indices for primary key lookups
+    this._userIndex = new Map();
+    this._driverIndex = new Map();
+    this._tripIndex = new Map();
+    this._saveTimer = null;
+
+    // Save any pending debounced writes before process exits
+    process.on('beforeExit', () => this.saveSync());
+  }
+
+  _rebuildIndices() {
+    this._userIndex = new Map(this.data.users.map(u => [u.id, u]));
+    this._driverIndex = new Map(this.data.drivers.map(d => [d.id, d]));
+    this._tripIndex = new Map(this.data.trips.map(t => [t.id, t]));
   }
 
   // Mimic db.prepare().get() and .all()
@@ -43,6 +57,10 @@ class InMemoryDB {
 
   // Direct access methods (used by routes instead of SQL)
   findUser(filter) {
+    // Performance optimization: Fast O(1) lookup when querying by primary key 'id'
+    if (filter && filter.id && Object.keys(filter).length === 1) {
+      return this._userIndex.get(filter.id);
+    }
     return this.data.users.find(u => {
       for (const [k, v] of Object.entries(filter)) {
         if (u[k] !== v) return false;
@@ -61,6 +79,10 @@ class InMemoryDB {
   }
 
   findDriver(filter) {
+    // Performance optimization: Fast O(1) lookup when querying by primary key 'id'
+    if (filter && filter.id && Object.keys(filter).length === 1) {
+      return this._driverIndex.get(filter.id);
+    }
     return this.data.drivers.find(d => {
       for (const [k, v] of Object.entries(filter)) {
         if (d[k] !== v) return false;
@@ -79,6 +101,10 @@ class InMemoryDB {
   }
 
   findTrip(filter) {
+    // Performance optimization: Fast O(1) lookup when querying by primary key 'id'
+    if (filter && filter.id && Object.keys(filter).length === 1) {
+      return this._tripIndex.get(filter.id);
+    }
     return this.data.trips.find(t => {
       for (const [k, v] of Object.entries(filter)) {
         if (t[k] !== v) return false;
@@ -102,6 +128,7 @@ class InMemoryDB {
     user.rating = user.rating || 5.0;
     user.is_active = 1;
     this.data.users.push(user);
+    if (user.id) this._userIndex.set(user.id, user);
     this.save();
     return user;
   }
@@ -113,6 +140,7 @@ class InMemoryDB {
     driver.total_rides = driver.total_rides || 0;
     driver.kyc_verified = driver.kyc_verified || 0;
     this.data.drivers.push(driver);
+    if (driver.id) this._driverIndex.set(driver.id, driver);
     this.save();
     return driver;
   }
@@ -122,6 +150,7 @@ class InMemoryDB {
     trip.created_at = trip.created_at || new Date().toISOString();
     trip.status = trip.status || 'requested';
     this.data.trips.push(trip);
+    if (trip.id) this._tripIndex.set(trip.id, trip);
     this.save();
     return trip;
   }
@@ -181,7 +210,21 @@ class InMemoryDB {
     return this.data.earnings.filter(e => e.driver_id === driverId);
   }
 
+  // Performance optimization: Debounce disk writes so high-frequency updates (e.g., location pings)
+  // do not execute blocking synchronous disk I/O on every call.
   save() {
+    if (this._saveTimer) return;
+    this._saveTimer = setTimeout(() => {
+      this._saveTimer = null;
+      this.saveSync();
+    }, 200);
+  }
+
+  saveSync() {
+    if (this._saveTimer) {
+      clearTimeout(this._saveTimer);
+      this._saveTimer = null;
+    }
     try {
       fs.writeFileSync(DB_PATH, JSON.stringify(this.data, null, 2));
     } catch (e) {
@@ -194,6 +237,7 @@ class InMemoryDB {
       if (fs.existsSync(DB_PATH)) {
         const raw = fs.readFileSync(DB_PATH, 'utf8');
         this.data = JSON.parse(raw);
+        this._rebuildIndices();
         console.log('📂 Loaded existing database');
         return true;
       }
