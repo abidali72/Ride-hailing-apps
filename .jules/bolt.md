@@ -1,0 +1,3 @@
+## 2025-05-18 - Fast Geometric Bounding Box Filter for Driver Matching
+**Learning:** In spatial/geolocation matching algorithms, running full trigonometric Haversine distance calculations (`calculateDistance`) and nested database lookups (`db.findUser`) for every driver in the dataset before filtering creates severe CPU bottlenecks ($O(N \cdot M)$). A simple planar bounding box pre-filter ($\Delta\text{lat}$ and $\Delta\text{lng}$) eliminates distant drivers using fast arithmetic comparisons.
+**Action:** Always apply a fast geometric bounding box check when querying geospatial items by radius and defer expensive DB lookups and object allocations until items are confirmed within distance threshold.
