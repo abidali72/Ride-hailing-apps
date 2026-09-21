@@ -1,0 +1,3 @@
+## 2025-05-20 - Map Indexing for InMemoryDB
+**Learning:** `InMemoryDB` lookups like `findUser({ id })` or `findDriver({ user_id })` scanned entire arrays sequentially with `Object.entries(filter)` on every element. Inside loops like driver matching (`findNearbyDrivers`), this resulted in $O(N \cdot M)$ complexity and over 2.3 seconds per lookup with large datasets.
+**Action:** Maintain internal `Map` indices (`_usersById`, `_driversById`, `_driversByUserId`, `_tripsById`) in `InMemoryDB` for $O(1)$ primary/foreign key lookups and pre-extract filter entries to eliminate redundant object allocation during array iterations.

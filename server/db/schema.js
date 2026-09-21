@@ -20,6 +20,35 @@ class InMemoryDB {
       earnings: [],
       settings: {}
     };
+    this._reindex();
+  }
+
+  // Rebuild fast Map lookup indices for O(1) query performance
+  _reindex() {
+    this._usersById = new Map();
+    this._driversById = new Map();
+    this._driversByUserId = new Map();
+    this._tripsById = new Map();
+
+    if (this.data.users) {
+      for (let i = 0; i < this.data.users.length; i++) {
+        const u = this.data.users[i];
+        if (u.id) this._usersById.set(u.id, u);
+      }
+    }
+    if (this.data.drivers) {
+      for (let i = 0; i < this.data.drivers.length; i++) {
+        const d = this.data.drivers[i];
+        if (d.id) this._driversById.set(d.id, d);
+        if (d.user_id) this._driversByUserId.set(d.user_id, d);
+      }
+    }
+    if (this.data.trips) {
+      for (let i = 0; i < this.data.trips.length; i++) {
+        const t = this.data.trips[i];
+        if (t.id) this._tripsById.set(t.id, t);
+      }
+    }
   }
 
   // Mimic db.prepare().get() and .all()
@@ -41,56 +70,80 @@ class InMemoryDB {
     return { changes: 0 };
   }
 
-  // Direct access methods (used by routes instead of SQL)
+  // Direct access methods (optimized with Map index O(1) lookup & pre-extracted filter entries)
   findUser(filter) {
+    const keys = Object.keys(filter);
+    if (keys.length === 1 && keys[0] === 'id') {
+      return this._usersById.get(filter.id);
+    }
+    const entries = Object.entries(filter);
     return this.data.users.find(u => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (u[k] !== v) return false;
+      for (let i = 0; i < entries.length; i++) {
+        if (u[entries[i][0]] !== entries[i][1]) return false;
       }
       return true;
     });
   }
 
   findUsers(filter = {}) {
+    const entries = Object.entries(filter);
+    if (entries.length === 0) return [...this.data.users];
     return this.data.users.filter(u => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (u[k] !== v) return false;
+      for (let i = 0; i < entries.length; i++) {
+        if (u[entries[i][0]] !== entries[i][1]) return false;
       }
       return true;
     });
   }
 
   findDriver(filter) {
+    const keys = Object.keys(filter);
+    if (keys.length === 1 && keys[0] === 'id') {
+      return this._driversById.get(filter.id);
+    }
+    if (keys.length === 1 && keys[0] === 'user_id') {
+      return this._driversByUserId.get(filter.user_id);
+    }
+    const entries = Object.entries(filter);
     return this.data.drivers.find(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
+      for (let i = 0; i < entries.length; i++) {
+        if (d[entries[i][0]] !== entries[i][1]) return false;
       }
       return true;
     });
   }
 
   findDrivers(filter = {}) {
+    const entries = Object.entries(filter);
+    if (entries.length === 0) return [...this.data.drivers];
     return this.data.drivers.filter(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
+      for (let i = 0; i < entries.length; i++) {
+        if (d[entries[i][0]] !== entries[i][1]) return false;
       }
       return true;
     });
   }
 
   findTrip(filter) {
+    const keys = Object.keys(filter);
+    if (keys.length === 1 && keys[0] === 'id') {
+      return this._tripsById.get(filter.id);
+    }
+    const entries = Object.entries(filter);
     return this.data.trips.find(t => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (t[k] !== v) return false;
+      for (let i = 0; i < entries.length; i++) {
+        if (t[entries[i][0]] !== entries[i][1]) return false;
       }
       return true;
     });
   }
 
   findTrips(filter = {}) {
+    const entries = Object.entries(filter);
+    if (entries.length === 0) return [...this.data.trips];
     return this.data.trips.filter(t => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (t[k] !== v) return false;
+      for (let i = 0; i < entries.length; i++) {
+        if (t[entries[i][0]] !== entries[i][1]) return false;
       }
       return true;
     });
@@ -102,6 +155,7 @@ class InMemoryDB {
     user.rating = user.rating || 5.0;
     user.is_active = 1;
     this.data.users.push(user);
+    if (user.id) this._usersById.set(user.id, user);
     this.save();
     return user;
   }
@@ -113,6 +167,8 @@ class InMemoryDB {
     driver.total_rides = driver.total_rides || 0;
     driver.kyc_verified = driver.kyc_verified || 0;
     this.data.drivers.push(driver);
+    if (driver.id) this._driversById.set(driver.id, driver);
+    if (driver.user_id) this._driversByUserId.set(driver.user_id, driver);
     this.save();
     return driver;
   }
@@ -122,6 +178,7 @@ class InMemoryDB {
     trip.created_at = trip.created_at || new Date().toISOString();
     trip.status = trip.status || 'requested';
     this.data.trips.push(trip);
+    if (trip.id) this._tripsById.set(trip.id, trip);
     this.save();
     return trip;
   }
@@ -143,26 +200,29 @@ class InMemoryDB {
   }
 
   updateUser(id, updates) {
-    const user = this.data.users.find(u => u.id === id);
+    const user = this.findUser({ id });
     if (user) Object.assign(user, updates);
     this.save();
     return user;
   }
 
   updateDriver(filter, updates) {
-    const driver = this.data.drivers.find(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
+    const driver = this.findDriver(filter);
+    if (driver) {
+      if (updates.user_id && driver.user_id && driver.user_id !== updates.user_id) {
+        this._driversByUserId.delete(driver.user_id);
       }
-      return true;
-    });
-    if (driver) Object.assign(driver, updates);
+      Object.assign(driver, updates);
+      if (updates.user_id) {
+        this._driversByUserId.set(updates.user_id, driver);
+      }
+    }
     this.save();
     return driver;
   }
 
   updateTrip(id, updates) {
-    const trip = this.data.trips.find(t => t.id === id);
+    const trip = this.findTrip({ id });
     if (trip) Object.assign(trip, updates);
     this.save();
     return trip;
@@ -194,6 +254,7 @@ class InMemoryDB {
       if (fs.existsSync(DB_PATH)) {
         const raw = fs.readFileSync(DB_PATH, 'utf8');
         this.data = JSON.parse(raw);
+        this._reindex();
         console.log('📂 Loaded existing database');
         return true;
       }
