@@ -10,6 +10,29 @@ const path = require('path');
 
 const DB_PATH = path.join(__dirname, '..', 'zaara_data.json');
 
+/**
+ * Fast filter predicate generator.
+ * Evaluates filter keys once outside array iteration loops
+ * and optimizes single-key filters to avoid garbage array creation per element.
+ */
+function _filterPredicate(filter = {}) {
+  const keys = Object.keys(filter);
+  const len = keys.length;
+  if (len === 0) return () => true;
+  if (len === 1) {
+    const key = keys[0];
+    const val = filter[key];
+    return item => item[key] === val;
+  }
+  const values = keys.map(k => filter[k]);
+  return item => {
+    for (let i = 0; i < len; i++) {
+      if (item[keys[i]] !== values[i]) return false;
+    }
+    return true;
+  };
+}
+
 class InMemoryDB {
   constructor() {
     this.data = {
@@ -43,57 +66,27 @@ class InMemoryDB {
 
   // Direct access methods (used by routes instead of SQL)
   findUser(filter) {
-    return this.data.users.find(u => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (u[k] !== v) return false;
-      }
-      return true;
-    });
+    return this.data.users.find(_filterPredicate(filter));
   }
 
   findUsers(filter = {}) {
-    return this.data.users.filter(u => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (u[k] !== v) return false;
-      }
-      return true;
-    });
+    return this.data.users.filter(_filterPredicate(filter));
   }
 
   findDriver(filter) {
-    return this.data.drivers.find(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
-      }
-      return true;
-    });
+    return this.data.drivers.find(_filterPredicate(filter));
   }
 
   findDrivers(filter = {}) {
-    return this.data.drivers.filter(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
-      }
-      return true;
-    });
+    return this.data.drivers.filter(_filterPredicate(filter));
   }
 
   findTrip(filter) {
-    return this.data.trips.find(t => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (t[k] !== v) return false;
-      }
-      return true;
-    });
+    return this.data.trips.find(_filterPredicate(filter));
   }
 
   findTrips(filter = {}) {
-    return this.data.trips.filter(t => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (t[k] !== v) return false;
-      }
-      return true;
-    });
+    return this.data.trips.filter(_filterPredicate(filter));
   }
 
   addUser(user) {
@@ -150,12 +143,7 @@ class InMemoryDB {
   }
 
   updateDriver(filter, updates) {
-    const driver = this.data.drivers.find(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
-      }
-      return true;
-    });
+    const driver = this.data.drivers.find(_filterPredicate(filter));
     if (driver) Object.assign(driver, updates);
     this.save();
     return driver;
