@@ -1,0 +1,3 @@
+## 2026-09-28 - InMemoryDB Single-Key Indexing & Iteration Allocation
+**Learning:** Performing repeated `Array.prototype.find()` searches over JSON array stores with `Object.entries(filter)` inside callback functions introduces severe performance degradation (e.g. 50,000 trip lookups taking 4.7 seconds vs <3 milliseconds with Map index) due to linear scanning and heavy temporary array allocation overhead.
+**Action:** Index single primary key and frequently queried foreign keys (`id`, `user_id`) using Map data structures in in-memory stores and replace `Object.entries()` in predicate loops with allocation-free `for (const key in filter)` iteration.
