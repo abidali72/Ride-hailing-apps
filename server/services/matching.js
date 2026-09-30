@@ -12,28 +12,46 @@ function findNearbyDrivers(db, pickupLat, pickupLng, vehicleType, radiusKm = 5) 
         drivers = drivers.filter(d => d.vehicle_type === vehicleType);
     }
 
-    // Enrich with user info and calculate distance
-    const nearbyDrivers = drivers
-        .map(driver => {
+    // Bolt Optimization: Bounding box pre-filtering (~110km/deg lat, ~85km/deg lng for Pakistan region)
+    // Avoids expensive Haversine distance trig calls & DB user lookups for distant drivers.
+    const latBound = radiusKm / 110;
+    const lngBound = radiusKm / 85;
+
+    const nearbyDrivers = [];
+    for (let i = 0; i < drivers.length; i++) {
+        const driver = drivers[i];
+        const dLat = driver.location_lat || 0;
+        const dLng = driver.location_lng || 0;
+
+        // Bounding box pre-check
+        if (Math.abs(dLat - pickupLat) > latBound || Math.abs(dLng - pickupLng) > lngBound) {
+            continue;
+        }
+
+        const distance = calculateDistance(pickupLat, pickupLng, dLat, dLng);
+        const roundedDistance = Math.round(distance * 10) / 10;
+
+        if (roundedDistance <= radiusKm) {
+            // Defer DB user lookup until driver is confirmed within radius
             const user = db.findUser({ id: driver.user_id });
-            const distance = calculateDistance(pickupLat, pickupLng, driver.location_lat || 0, driver.location_lng || 0);
-            return {
+            nearbyDrivers.push({
                 ...driver,
                 name: user?.name,
                 phone: user?.phone,
                 user_rating: user?.rating || 5.0,
                 user_id: driver.user_id,
-                distance: Math.round(distance * 10) / 10
-            };
-        })
-        .filter(driver => driver.distance <= radiusKm)
-        .sort((a, b) => {
-            const distScore = a.distance - b.distance;
-            if (Math.abs(distScore) < 0.5) {
-                return (b.user_rating || 0) - (a.user_rating || 0);
-            }
-            return distScore;
-        });
+                distance: roundedDistance
+            });
+        }
+    }
+
+    nearbyDrivers.sort((a, b) => {
+        const distScore = a.distance - b.distance;
+        if (Math.abs(distScore) < 0.5) {
+            return (b.user_rating || 0) - (a.user_rating || 0);
+        }
+        return distScore;
+    });
 
     return nearbyDrivers;
 }
