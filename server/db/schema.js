@@ -42,55 +42,71 @@ class InMemoryDB {
   }
 
   // Direct access methods (used by routes instead of SQL)
+  // Bolt Optimization: Extract filter keys outside array iteration to avoid Object.entries allocation per element
   findUser(filter) {
+    const keys = Object.keys(filter);
     return this.data.users.find(u => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (u[k] !== v) return false;
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        if (u[k] !== filter[k]) return false;
       }
       return true;
     });
   }
 
   findUsers(filter = {}) {
+    const keys = Object.keys(filter);
+    if (keys.length === 0) return this.data.users;
     return this.data.users.filter(u => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (u[k] !== v) return false;
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        if (u[k] !== filter[k]) return false;
       }
       return true;
     });
   }
 
   findDriver(filter) {
+    const keys = Object.keys(filter);
     return this.data.drivers.find(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        if (d[k] !== filter[k]) return false;
       }
       return true;
     });
   }
 
   findDrivers(filter = {}) {
+    const keys = Object.keys(filter);
+    if (keys.length === 0) return this.data.drivers;
     return this.data.drivers.filter(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        if (d[k] !== filter[k]) return false;
       }
       return true;
     });
   }
 
   findTrip(filter) {
+    const keys = Object.keys(filter);
     return this.data.trips.find(t => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (t[k] !== v) return false;
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        if (t[k] !== filter[k]) return false;
       }
       return true;
     });
   }
 
   findTrips(filter = {}) {
+    const keys = Object.keys(filter);
+    if (keys.length === 0) return this.data.trips;
     return this.data.trips.filter(t => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (t[k] !== v) return false;
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        if (t[k] !== filter[k]) return false;
       }
       return true;
     });
@@ -150,9 +166,11 @@ class InMemoryDB {
   }
 
   updateDriver(filter, updates) {
+    const keys = Object.keys(filter);
     const driver = this.data.drivers.find(d => {
-      for (const [k, v] of Object.entries(filter)) {
-        if (d[k] !== v) return false;
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        if (d[k] !== filter[k]) return false;
       }
       return true;
     });

@@ -1,0 +1,3 @@
+## 2026-09-30 - In-Memory Spatial Search & DB Query Allocation Overhead
+**Learning:** In spatial driver matching queries, calculating Haversine distances and executing DB `findUser` lookups for every driver before filtering caused high quadratic/linear scan overhead. Additionally, calling `Object.entries(filter)` inside array callbacks in `InMemoryDB` created thousands of temporary key-value array allocations per search request.
+**Action:** Always apply bounding box pre-filtering before trigonometric spatial distance calculations, defer user lookups until after distance bounds are met, and hoist `Object.keys(filter)` outside of predicate callbacks in array query methods.
