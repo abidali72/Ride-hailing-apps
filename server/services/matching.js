@@ -12,28 +12,35 @@ function findNearbyDrivers(db, pickupLat, pickupLng, vehicleType, radiusKm = 5) 
         drivers = drivers.filter(d => d.vehicle_type === vehicleType);
     }
 
-    // Enrich with user info and calculate distance
-    const nearbyDrivers = drivers
-        .map(driver => {
+    // Bolt Optimization: Filter by distance first in a single loop before looking up user details.
+    // In the in-memory DB, db.findUser performs an array scan. Checking distance first prevents
+    // unnecessary user lookups and object allocations for drivers out of range.
+    const nearbyDrivers = [];
+    for (let i = 0; i < drivers.length; i++) {
+        const driver = drivers[i];
+        const rawDistance = calculateDistance(pickupLat, pickupLng, driver.location_lat || 0, driver.location_lng || 0);
+        const distance = Math.round(rawDistance * 10) / 10;
+
+        if (distance <= radiusKm) {
             const user = db.findUser({ id: driver.user_id });
-            const distance = calculateDistance(pickupLat, pickupLng, driver.location_lat || 0, driver.location_lng || 0);
-            return {
+            nearbyDrivers.push({
                 ...driver,
                 name: user?.name,
                 phone: user?.phone,
                 user_rating: user?.rating || 5.0,
                 user_id: driver.user_id,
-                distance: Math.round(distance * 10) / 10
-            };
-        })
-        .filter(driver => driver.distance <= radiusKm)
-        .sort((a, b) => {
-            const distScore = a.distance - b.distance;
-            if (Math.abs(distScore) < 0.5) {
-                return (b.user_rating || 0) - (a.user_rating || 0);
-            }
-            return distScore;
-        });
+                distance
+            });
+        }
+    }
+
+    nearbyDrivers.sort((a, b) => {
+        const distScore = a.distance - b.distance;
+        if (Math.abs(distScore) < 0.5) {
+            return (b.user_rating || 0) - (a.user_rating || 0);
+        }
+        return distScore;
+    });
 
     return nearbyDrivers;
 }
