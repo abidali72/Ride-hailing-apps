@@ -181,11 +181,30 @@ class InMemoryDB {
     return this.data.earnings.filter(e => e.driver_id === driverId);
   }
 
-  save() {
-    try {
-      fs.writeFileSync(DB_PATH, JSON.stringify(this.data, null, 2));
-    } catch (e) {
-      // Silently fail on save errors
+  /**
+   * Debounced & Non-blocking save to disk.
+   * Avoids blocking Node.js event loop with synchronous writeFileSync on every mutation.
+   * Pass immediate = true to force a synchronous write (e.g., seeding or process exit).
+   */
+  save(immediate = false) {
+    if (immediate) {
+      if (this._saveTimer) {
+        clearTimeout(this._saveTimer);
+        this._saveTimer = null;
+      }
+      try {
+        fs.writeFileSync(DB_PATH, JSON.stringify(this.data, null, 2));
+      } catch (e) {
+        // Silently fail on save errors
+      }
+      return;
+    }
+
+    if (!this._saveTimer) {
+      this._saveTimer = setTimeout(() => {
+        this._saveTimer = null;
+        fs.writeFile(DB_PATH, JSON.stringify(this.data, null, 2), () => {});
+      }, 500);
     }
   }
 
@@ -276,7 +295,24 @@ function initializeDatabase() {
   db.setSetting('max_matching_radius_km', '5');
   db.setSetting('currency', 'PKR');
 
-  db.save();
+  db.save(true);
+
+  if (!InMemoryDB._exitHandlerRegistered) {
+    InMemoryDB._exitHandlerRegistered = true;
+    const flushExit = () => {
+      try {
+        if (db._saveTimer) {
+          clearTimeout(db._saveTimer);
+          db._saveTimer = null;
+          fs.writeFileSync(DB_PATH, JSON.stringify(db.data, null, 2));
+        }
+      } catch (e) {}
+    };
+    process.once('beforeExit', flushExit);
+    process.once('SIGINT', () => { flushExit(); process.exit(0); });
+    process.once('SIGTERM', () => { flushExit(); process.exit(0); });
+  }
+
   console.log('✅ Database seeded successfully!');
   return db;
 }
